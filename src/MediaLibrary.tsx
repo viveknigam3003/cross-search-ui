@@ -13,7 +13,7 @@ import {
 } from "@mantine/core";
 import React, { useEffect } from "react";
 import { FiExternalLink, FiImage, FiUpload } from "react-icons/fi";
-import { createAsset, fetchAssetLabels } from "./apis/assets";
+import { createAsset, fetchAssetLabels, updateCustomFields } from "./apis/assets";
 
 interface Props {}
 
@@ -146,6 +146,34 @@ const MediaLibrary = (props: Props) => {
     return [];
   };
 
+  const updateLabels = async (key: keyof CustomFields, value: any) => {
+    try {
+        const result = await updateCustomFields(uploadedFile._id, key, value.join(", "));
+        setMultiSelectData({
+            ...multiSelectData,
+            [key]: result.customFields[key].split(", ").map((item: string) => ({ label: item, value: item })),
+        })
+        setLabels({
+            ...labels,
+            [key]: result.customFields[key].split(", "),
+        })
+    } catch (error) {
+        console.log(error);
+    }
+  };
+
+  const handleMultiSelectChange = async (key: keyof CustomFields, value: string[]) => {
+    try {
+        const result = await updateCustomFields(uploadedFile._id, key, value.join(", "));
+        setLabels({
+            ...labels,
+            [key]: result.customFields[key].split(", "),
+        })
+    } catch (error) {
+        console.log(error);
+    }
+  }
+
   return (
     <Box>
       <Title align="center" py="md">
@@ -203,16 +231,9 @@ const MediaLibrary = (props: Props) => {
                   searchable
                   getCreateLabel={(query) => `+ Create ${query}`}
                   value={labels.products}
-                  onChange={(v) => setLabels((c) => ({ ...c, products: v }))}
+                  onChange={(v) => handleMultiSelectChange("products", v)}
                   onCreate={(query) => {
-                    setMultiSelectData((c) => ({
-                      ...c,
-                      products: [...c.products, { label: query, value: query }],
-                    }));
-                    setLabels((c) => ({
-                      ...c,
-                      products: [...c.products, query],
-                    }));
+                    updateLabels("products", [...labels.products, query]);
                     return query;
                   }}
                   mb="lg"
@@ -233,11 +254,7 @@ const MediaLibrary = (props: Props) => {
                   searchable
                   getCreateLabel={(query) => `+ Create ${query}`}
                   onCreate={(query) => {
-                    setMultiSelectData((c) => ({
-                      ...c,
-                      colors: [...c.colors, { label: query, value: query }],
-                    }));
-                    setLabels((c) => ({ ...c, colors: [...c.colors, query] }));
+                    updateLabels("colors", [...labels.colors, query]);
                     return query;
                   }}
                   mb="lg"
@@ -258,11 +275,7 @@ const MediaLibrary = (props: Props) => {
                   searchable
                   getCreateLabel={(query) => `+ Create ${query}`}
                   onCreate={(query) => {
-                    setMultiSelectData((c) => ({
-                      ...c,
-                      tags: [...c.tags, { label: query, value: query }],
-                    }));
-                    setLabels((c) => ({ ...c, tags: [...c.tags, query] }));
+                    updateLabels("tags", [...labels.tags, query]);
                     return query;
                   }}
                   mb="lg"
