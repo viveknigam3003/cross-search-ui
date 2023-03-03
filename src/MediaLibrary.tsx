@@ -44,8 +44,7 @@ const initialState = {
 const MediaLibrary = (props: Props) => {
   const [file, setFile] = React.useState<File | null>(null);
   const [isUploading, setIsUploading] = React.useState<boolean>(false);
-  const [isFetchingLabels, setIsFetchingLabels] =
-    React.useState<boolean>(false);
+  const [isFetchingLabels, setIsFetchingLabels] = React.useState<boolean>(false);
   const [uploadedFile, setUploadedFile] =
     React.useState<UploadedFile>(initialState);
   const { classes } = useStyles();
@@ -192,7 +191,9 @@ const MediaLibrary = (props: Props) => {
                 Open in new tab <FiExternalLink />
               </Box>
 
-              <Skeleton visible={isFetchingLabels} mb="lg">
+              {isFetchingLabels ? (
+                <Skeleton height={60} mb="lg" />
+              ) : (
                 <MultiSelect
                   data={multiSelectData.products}
                   placeholder="Select products"
@@ -214,10 +215,13 @@ const MediaLibrary = (props: Props) => {
                     }));
                     return query;
                   }}
+                  mb="lg"
                 />
-              </Skeleton>
+              )}
 
-              <Skeleton visible={isFetchingLabels} mb="lg">
+              {isFetchingLabels ? (
+                <Skeleton height={60} mb="lg" />
+              ) : (
                 <MultiSelect
                   data={multiSelectData.colors}
                   placeholder="Select colors"
@@ -236,10 +240,13 @@ const MediaLibrary = (props: Props) => {
                     setLabels((c) => ({ ...c, colors: [...c.colors, query] }));
                     return query;
                   }}
+                  mb="lg"
                 />
-              </Skeleton>
+              )}
 
-              <Skeleton visible={isFetchingLabels} mb="lg">
+              {isFetchingLabels ? (
+                <Skeleton height={60} mb="lg" />
+              ) : (
                 <MultiSelect
                   data={multiSelectData.tags}
                   placeholder="Select tags"
@@ -258,8 +265,9 @@ const MediaLibrary = (props: Props) => {
                     setLabels((c) => ({ ...c, tags: [...c.tags, query] }));
                     return query;
                   }}
+                  mb="lg"
                 />
-              </Skeleton>
+              )}
             </Box>
           </Box>
         </Flex>
