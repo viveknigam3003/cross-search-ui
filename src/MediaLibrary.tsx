@@ -5,6 +5,8 @@ import {
   FileInput,
   Flex,
   Image,
+  MultiSelect,
+  MultiSelectProps,
   Skeleton,
   Text,
   Title,
@@ -16,9 +18,9 @@ import { createAsset, fetchAssetLabels } from "./apis/assets";
 interface Props {}
 
 interface CustomFields {
-  products: string[];
-  tags: string[];
-  colors: string[];
+  products?: string;
+  tags?: string;
+  colors?: string;
 }
 
 interface UploadedFile {
@@ -31,16 +33,12 @@ interface UploadedFile {
 }
 
 const initialState = {
-  //   bucket: "rocketium-tagged-assets",
-  //   customFields: {
-  //     products: [],
-  //     tags: [],
-  //     colors: [],
-  //   },
-  //   name: "EORS_Day01_0225 Large.jpeg",
-  //   parentFolderId: null,
-  //   url: "https://rocketium-tagged-assets.s3.amazonaws.com/EORS_Day01_0225%20Large.jpeg",
-  //   _id: "6401cb1fea4477f61b50b72d",
+  bucket: "",
+  customFields: {},
+  name: "",
+  parentFolderId: null,
+  url: "",
+  _id: "",
 };
 
 const MediaLibrary = (props: Props) => {
@@ -49,8 +47,26 @@ const MediaLibrary = (props: Props) => {
   const [isFetchingLabels, setIsFetchingLabels] =
     React.useState<boolean>(false);
   const [uploadedFile, setUploadedFile] =
-    React.useState<Partial<UploadedFile>>(initialState);
+    React.useState<UploadedFile>(initialState);
   const { classes } = useStyles();
+  const [multiSelectData, setMultiSelectData] = React.useState<{
+    products: MultiSelectProps["data"];
+    tags: MultiSelectProps["data"];
+    colors: MultiSelectProps["data"];
+  }>({
+    products: [],
+    tags: [],
+    colors: [],
+  });
+  const [labels, setLabels] = React.useState<{
+    products: string[];
+    tags: string[];
+    colors: string[];
+  }>({
+    products: [],
+    tags: [],
+    colors: [],
+  });
 
   const uploadAsset = async () => {
     try {
@@ -75,7 +91,20 @@ const MediaLibrary = (props: Props) => {
     try {
       setIsFetchingLabels(true);
       const res = await fetchAssetLabels(uploadedFile._id, uploadedFile.name);
-      setUploadedFile({ ...uploadedFile, customFields: res.customFields });
+      const updatedFile = { ...uploadedFile, customFields: res.customFields };
+      setUploadedFile(updatedFile);
+
+      setMultiSelectData({
+        products: getData(updatedFile, "products"),
+        tags: getData(updatedFile, "tags"),
+        colors: getData(updatedFile, "colors"),
+      });
+
+      setLabels({
+        products: getData(updatedFile, "products").map((item) => item.value),
+        tags: getData(updatedFile, "tags").map((item) => item.value),
+        colors: getData(updatedFile, "colors").map((item) => item.value),
+      });
     } catch (error) {
       console.log(error);
     } finally {
@@ -98,6 +127,25 @@ const MediaLibrary = (props: Props) => {
       fetchLabels();
     }
   }, [uploadedFile, isFetchingLabels, isUploading]);
+
+  const getData = (
+    uploadedFile: UploadedFile,
+    key: keyof CustomFields
+  ): Array<{ label: string; value: string }> => {
+    if (
+      uploadedFile.customFields &&
+      uploadedFile.customFields?.[key] &&
+      uploadedFile.customFields?.[key]?.length
+    ) {
+      const data =
+        uploadedFile.customFields?.[key]
+          ?.split(", ")
+          .map((item) => ({ label: item, value: item })) || [];
+      return data;
+    }
+
+    return [];
+  };
 
   return (
     <Box>
@@ -129,7 +177,7 @@ const MediaLibrary = (props: Props) => {
               className={classes.imageRoot}
               src={uploadedFile.url}
               alt={uploadedFile.name}
-              maw={150}
+              maw={240}
             />
             <Box my="lg" className={classes.details}>
               <Text className={classes.imageTitle}>{uploadedFile.name}</Text>
@@ -139,34 +187,79 @@ const MediaLibrary = (props: Props) => {
                 target="_blank"
                 className={classes.imageTitle}
                 py="xs"
+                w="fit-content"
               >
                 Open in new tab <FiExternalLink />
               </Box>
 
-              {isFetchingLabels ? (
-                <Skeleton height={10} mb="xl" />
-              ) : (
-                <Flex gap="xs" className={classes.prop}>
-                  <Text weight={500}>Products: </Text>
-                  <Text>{uploadedFile.customFields?.products}</Text>
-                </Flex>
-              )}
-              {isFetchingLabels ? (
-                <Skeleton height={10} mb="xl" />
-              ) : (
-                <Flex gap="xs" className={classes.prop}>
-                  <Text weight={500}>Colors: </Text>
-                  <Text>{uploadedFile.customFields?.colors}</Text>
-                </Flex>
-              )}
-              {isFetchingLabels ? (
-                <Skeleton height={10} mb="xl" />
-              ) : (
-                <Flex gap="xs" className={classes.prop}>
-                  <Text weight={500}>Tags: </Text>
-                  <Text>{uploadedFile.customFields?.tags}</Text>
-                </Flex>
-              )}
+              <Skeleton visible={isFetchingLabels} mb="lg">
+                <MultiSelect
+                  data={multiSelectData.products}
+                  placeholder="Select products"
+                  label="Products"
+                  multiple
+                  creatable
+                  searchable
+                  getCreateLabel={(query) => `+ Create ${query}`}
+                  value={labels.products}
+                  onChange={(v) => setLabels((c) => ({ ...c, products: v }))}
+                  onCreate={(query) => {
+                    setMultiSelectData((c) => ({
+                      ...c,
+                      products: [...c.products, { label: query, value: query }],
+                    }));
+                    setLabels((c) => ({
+                      ...c,
+                      products: [...c.products, query],
+                    }));
+                    return query;
+                  }}
+                />
+              </Skeleton>
+
+              <Skeleton visible={isFetchingLabels} mb="lg">
+                <MultiSelect
+                  data={multiSelectData.colors}
+                  placeholder="Select colors"
+                  label="Colors"
+                  multiple
+                  value={labels.colors}
+                  onChange={(v) => setLabels((c) => ({ ...c, colors: v }))}
+                  creatable
+                  searchable
+                  getCreateLabel={(query) => `+ Create ${query}`}
+                  onCreate={(query) => {
+                    setMultiSelectData((c) => ({
+                      ...c,
+                      colors: [...c.colors, { label: query, value: query }],
+                    }));
+                    setLabels((c) => ({ ...c, colors: [...c.colors, query] }));
+                    return query;
+                  }}
+                />
+              </Skeleton>
+
+              <Skeleton visible={isFetchingLabels} mb="lg">
+                <MultiSelect
+                  data={multiSelectData.tags}
+                  placeholder="Select tags"
+                  label="Tags"
+                  multiple
+                  value={labels.tags}
+                  onChange={(v) => setLabels((c) => ({ ...c, tags: v }))}
+                  creatable
+                  searchable
+                  getCreateLabel={(query) => `+ Create ${query}`}
+                  onCreate={(query) => {
+                    setMultiSelectData((c) => ({
+                      ...c,
+                      tags: [...c.tags, { label: query, value: query }],
+                    }));
+                    setLabels((c) => ({ ...c, tags: [...c.tags, query] }));
+                    return query;
+                  }}
+                />
+              </Skeleton>
             </Box>
           </Box>
         </Flex>
@@ -180,7 +273,7 @@ export default MediaLibrary;
 const useStyles = createStyles((theme) => ({
   card: {
     display: "flex",
-    minWidth: 500,
+    width: 800,
     // border: `1px solid ${theme.colors.gray[3]}`,
     borderRadius: theme.radius.lg,
     padding: theme.spacing.sm,
@@ -190,6 +283,7 @@ const useStyles = createStyles((theme) => ({
     display: "flex",
     flexDirection: "column",
     margin: theme.spacing.lg,
+    width: "100%",
   },
   prop: {
     fontSize: 14,
