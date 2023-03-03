@@ -2,8 +2,11 @@ import {
   Box,
   Center,
   createStyles,
+  Flex,
   Grid,
+  Image,
   Popover,
+  Text,
   TextInput,
   Title,
 } from "@mantine/core";
@@ -22,13 +25,13 @@ const SearchResults: React.FC<{ data: any }> = ({ data }) => {
         Product Name
       </Grid.Col>
       <Grid.Col span={2} className={classes.title}>
-        Product
+        Products
       </Grid.Col>
       <Grid.Col span={2} className={classes.title}>
-        Color
+        Colors
       </Grid.Col>
       <Grid.Col span={3} className={classes.title}>
-        Brand
+        Tags
       </Grid.Col>
       {data.map((result: any) => (
         <>
@@ -37,14 +40,31 @@ const SearchResults: React.FC<{ data: any }> = ({ data }) => {
               {result.name}
             </Box>
           </Grid.Col>
-          <Grid.Col span={2}>{result.customFields.product}</Grid.Col>
-          <Grid.Col span={2}>{result.customFields.color}</Grid.Col>
+          <Grid.Col span={2}>{result.customFields.products}</Grid.Col>
+          <Grid.Col span={2}>{result.customFields.colors}</Grid.Col>
           <Grid.Col span={3} className={classes.brand}>
-            {result.customFields.brand}
+            {result.customFields.tags}
           </Grid.Col>
         </>
       ))}
     </Grid>
+  );
+};
+
+const ImageSearchResults: React.FC<{ data: any }> = ({ data }) => {
+  const { classes } = useStyles();
+
+  return (
+    <>
+      {data.map((result: any) => (
+        <Flex gap="xs" mih={60}>
+          <Image src={result.url} alt={result.name} maw={50} />
+          <Flex align={"center"}>
+            <Text weight={500}>{result.name}</Text>
+          </Flex>
+        </Flex>
+      ))}
+    </>
   );
 };
 
@@ -106,7 +126,7 @@ const Search = (props: Props) => {
             />
           </Popover.Target>
           <Popover.Dropdown>
-            <SearchResults data={searchResults} />
+            <ImageSearchResults data={searchResults} />
           </Popover.Dropdown>
         </Popover>
       </Center>

@@ -39,3 +39,9 @@ export const fetchAssetLabels = async (imageId: string, imageName: string) => {
   const labels = await axios.get(url);
   return labels.data;
 };
+
+export const updateCustomFields = async (imageId: string, customFieldKey: string, customFieldValue: any) => {
+  const url = `${API_URL}/api/assets/custom-fields`;
+  const updatedAsset = await axios.patch(url, { imageId, key: customFieldKey, value: customFieldValue });
+  return updatedAsset.data;
+}
