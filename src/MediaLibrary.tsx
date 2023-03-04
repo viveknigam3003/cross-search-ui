@@ -177,9 +177,9 @@ const MediaLibrary = (props: Props) => {
   return (
     <Box>
       <Title align="center" py="md">
-        Media Library
+        Media Upload
       </Title>
-      <Flex direction="column" align={"center"} gap="md">
+      <Flex direction="column" align={"center"} gap="md" my='lg'>
         <FileInput
           placeholder="Select image from your computer"
           accept="image/jpeg"
