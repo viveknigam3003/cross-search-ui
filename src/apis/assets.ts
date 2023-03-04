@@ -45,3 +45,9 @@ export const updateCustomFields = async (imageId: string, customFieldKey: string
   const updatedAsset = await axios.patch(url, { imageId, key: customFieldKey, value: customFieldValue });
   return updatedAsset.data;
 }
+
+export const searchAssets = async (searchTerm: string) => {
+  const url = `${API_URL}/api/assets/search?searchString=${searchTerm}`;
+  const assets = await axios.get(url);
+  return assets.data;
+}

@@ -6,13 +6,14 @@ import {
   Grid,
   Image,
   Popover,
+  SimpleGrid,
   Text,
   TextInput,
   Title,
 } from "@mantine/core";
-import { useDebouncedValue } from "@mantine/hooks";
+import { getHotkeyHandler, useDebouncedValue } from "@mantine/hooks";
 import React, { useEffect, useState } from "react";
-import { autoCompleteAssets } from "./apis/assets";
+import { autoCompleteAssets, searchAssets } from "./apis/assets";
 
 interface Props {}
 
@@ -51,16 +52,40 @@ const SearchResults: React.FC<{ data: any }> = ({ data }) => {
   );
 };
 
-const ImageSearchResults: React.FC<{ data: any }> = ({ data }) => {
-  const { classes } = useStyles();
+const MatchingCustomFields = ({ result }: any) => {
+  const doesNameMatch =
+    result.highlights.filter((item: any) => {
+      return item.path === "name";
+    }).length > 0;
 
+  if (doesNameMatch) {
+    return null;
+  }
+
+  const customFields = result.highlights
+    .filter((item: any) => {
+      return item.path.split(".")[0] === "customFields";
+    })
+    .sort((a: any, b: any) => b.score - a.score)
+    .map((item: any) => item.path.split(".")[1])
+    .join(", ");
+
+  return (
+    <Text color="gray" size={12}>
+      Search matches {customFields}
+    </Text>
+  );
+};
+
+const ImageSearchResults: React.FC<{ data: any }> = ({ data }) => {
   return (
     <>
       {data.map((result: any) => (
         <Flex gap="xs" mih={60}>
           <Image src={result.url} alt={result.name} maw={50} />
-          <Flex align={"center"}>
+          <Flex justify={"center"} direction="column">
             <Text weight={500}>{result.name}</Text>
+            <MatchingCustomFields result={result} />
           </Flex>
         </Flex>
       ))}
@@ -68,9 +93,26 @@ const ImageSearchResults: React.FC<{ data: any }> = ({ data }) => {
   );
 };
 
+const MediaGrid = ({ data }: any) => {
+  return (
+    <SimpleGrid cols={3}>
+      {data.map((result: any) => (
+        <Flex key={result._id} justify={"center"} direction="column">
+          <Image maw={128} src={result.url} alt={result.name} />
+         
+            <Text weight={500}>{result.name}</Text>
+            <MatchingCustomFields result={result} />
+          
+        </Flex>
+      ))}
+    </SimpleGrid>
+  );
+};
+
 const Search = (props: Props) => {
   const [searchString, setSearchString] = useState("");
   const [debouncedSearchString] = useDebouncedValue(searchString, 300);
+  const [autoCompleteResults, setAutoCompleteResults] = useState<any[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [fetching, setFetching] = React.useState(false);
   const [showingPopover, setShowingPopover] = useState(false);
@@ -82,7 +124,7 @@ const Search = (props: Props) => {
         setFetching(true);
         try {
           const res = await autoCompleteAssets(debouncedSearchString);
-          setSearchResults(res);
+          setAutoCompleteResults(res);
         } catch (error) {
           console.log("error", error);
         } finally {
@@ -94,8 +136,19 @@ const Search = (props: Props) => {
     fetchResults();
   }, [debouncedSearchString]);
 
+  const handleSearch = async (searchString: string) => {
+    if (searchString) {
+      try {
+        const res = await searchAssets(searchString);
+        setSearchResults(res);
+      } catch (error) {
+        console.log("error", error);
+      }
+    }
+  }
+
   return (
-    <Box>
+    <Flex direction={'column'} align='center'>
       <Title align="center" py="md">
         Asset Search
       </Title>
@@ -105,7 +158,7 @@ const Search = (props: Props) => {
           position="bottom"
           shadow="md"
           opened={
-            searchResults.length > 0 &&
+            autoCompleteResults.length > 0 &&
             debouncedSearchString.length > 0 &&
             showingPopover
           }
@@ -119,18 +172,32 @@ const Search = (props: Props) => {
               onBlurCapture={() => setShowingPopover(false)}
               w="40rem"
               size="md"
-              placeholder="Search for assets using brand, color, product or name"
+              placeholder="Search for assets using color, product, tags, or name"
               type="search"
               value={searchString}
               onChange={(e) => setSearchString(e.currentTarget.value)}
+              onKeyDown={getHotkeyHandler([
+                ["Enter", () => {
+                  handleSearch(searchString);
+                  setShowingPopover(false);
+                }],
+                ["mod+L", () => {
+                  setSearchString("");
+                  setSearchResults([]);
+                }]
+              ])}
             />
           </Popover.Target>
           <Popover.Dropdown>
-            <ImageSearchResults data={searchResults} />
+            <ImageSearchResults data={autoCompleteResults} />
           </Popover.Dropdown>
         </Popover>
       </Center>
-    </Box>
+      <Center w='50%'>
+
+        {searchResults.length > 0 && <MediaGrid data={searchResults} />}
+      </Center>
+    </Flex>
   );
 };
 
