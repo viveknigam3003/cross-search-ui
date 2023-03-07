@@ -210,9 +210,9 @@ const Search = (props: Props) => {
         {searchResults.length > 0 && <MediaGrid data={searchResults} />}
       </Center>
       <Affix position={{ top: 20, left: 20 }}>
-        <Link to="/upload">
+        <Link to="/">
           <Button leftIcon={<FiArrowLeft size="1rem" />} variant="subtle">
-            Go to upload
+            Go to home
           </Button>
         </Link>
       </Affix>

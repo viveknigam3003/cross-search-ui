@@ -306,9 +306,9 @@ const MediaLibrary = (props: Props) => {
         </Flex>
       )}
       <Affix position={{ top: 20, left: 20 }}>
-        <Link to="/search">
+        <Link to="/">
           <Button leftIcon={<FiArrowLeft size="1rem" />} variant="subtle">
-            Go to search
+            Go to home
           </Button>
         </Link>
       </Affix>
