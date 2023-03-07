@@ -1,4 +1,5 @@
 import {
+  Affix,
   Box,
   Button,
   createStyles,
@@ -9,11 +10,16 @@ import {
   MultiSelectProps,
   Skeleton,
   Text,
-  Title,
+  Title
 } from "@mantine/core";
 import React, { useEffect } from "react";
-import { FiExternalLink, FiImage, FiUpload } from "react-icons/fi";
-import { createAsset, fetchAssetLabels, updateCustomFields } from "./apis/assets";
+import { FiArrowLeft, FiExternalLink, FiImage, FiUpload } from "react-icons/fi";
+import { Link } from "react-router-dom";
+import {
+  createAsset,
+  fetchAssetLabels,
+  updateCustomFields
+} from "./apis/assets";
 
 interface Props {}
 
@@ -44,7 +50,8 @@ const initialState = {
 const MediaLibrary = (props: Props) => {
   const [file, setFile] = React.useState<File | null>(null);
   const [isUploading, setIsUploading] = React.useState<boolean>(false);
-  const [isFetchingLabels, setIsFetchingLabels] = React.useState<boolean>(false);
+  const [isFetchingLabels, setIsFetchingLabels] =
+    React.useState<boolean>(false);
   const [uploadedFile, setUploadedFile] =
     React.useState<UploadedFile>(initialState);
   const { classes } = useStyles();
@@ -148,38 +155,51 @@ const MediaLibrary = (props: Props) => {
 
   const updateLabels = async (key: keyof CustomFields, value: any) => {
     try {
-        const result = await updateCustomFields(uploadedFile._id, key, value.join(", "));
-        setMultiSelectData({
-            ...multiSelectData,
-            [key]: result.customFields[key].split(", ").map((item: string) => ({ label: item, value: item })),
-        })
-        setLabels({
-            ...labels,
-            [key]: result.customFields[key].split(", "),
-        })
+      const result = await updateCustomFields(
+        uploadedFile._id,
+        key,
+        value.join(", ")
+      );
+      setMultiSelectData({
+        ...multiSelectData,
+        [key]: result.customFields[key]
+          .split(", ")
+          .map((item: string) => ({ label: item, value: item })),
+      });
+      setLabels({
+        ...labels,
+        [key]: result.customFields[key].split(", "),
+      });
     } catch (error) {
-        console.log(error);
+      console.log(error);
     }
   };
 
-  const handleMultiSelectChange = async (key: keyof CustomFields, value: string[]) => {
+  const handleMultiSelectChange = async (
+    key: keyof CustomFields,
+    value: string[]
+  ) => {
     try {
-        const result = await updateCustomFields(uploadedFile._id, key, value.join(", "));
-        setLabels({
-            ...labels,
-            [key]: result.customFields[key].split(", "),
-        })
+      const result = await updateCustomFields(
+        uploadedFile._id,
+        key,
+        value.join(", ")
+      );
+      setLabels({
+        ...labels,
+        [key]: result.customFields[key].split(", "),
+      });
     } catch (error) {
-        console.log(error);
+      console.log(error);
     }
-  }
+  };
 
   return (
     <Box>
       <Title align="center" py="md">
         Media Upload
       </Title>
-      <Flex direction="column" align={"center"} gap="md" my='lg'>
+      <Flex direction="column" align={"center"} gap="md" my="lg">
         <FileInput
           placeholder="Select image from your computer"
           accept="image/jpeg"
@@ -285,6 +305,13 @@ const MediaLibrary = (props: Props) => {
           </Box>
         </Flex>
       )}
+      <Affix position={{ top: 20, left: 20 }}>
+        <Link to="/search">
+          <Button leftIcon={<FiArrowLeft size="1rem" />} variant="subtle">
+            Go to search
+          </Button>
+        </Link>
+      </Affix>
     </Box>
   );
 };

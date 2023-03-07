@@ -1,5 +1,7 @@
 import {
+  Affix,
   Box,
+  Button,
   Card,
   Center,
   createStyles,
@@ -14,6 +16,8 @@ import {
 } from "@mantine/core";
 import { getHotkeyHandler, useDebouncedValue } from "@mantine/hooks";
 import React, { useEffect, useState } from "react";
+import { FiArrowLeft } from "react-icons/fi";
+import { Link } from "react-router-dom";
 import { autoCompleteAssets, searchAssets } from "./apis/assets";
 
 interface Props {}
@@ -205,6 +209,13 @@ const Search = (props: Props) => {
       <Center w="50%">
         {searchResults.length > 0 && <MediaGrid data={searchResults} />}
       </Center>
+      <Affix position={{ top: 20, left: 20 }}>
+        <Link to="/upload">
+          <Button leftIcon={<FiArrowLeft size="1rem" />} variant="subtle">
+            Go to upload
+          </Button>
+        </Link>
+      </Affix>
     </Flex>
   );
 };
