@@ -1,5 +1,6 @@
 import {
   Box,
+  Card,
   Center,
   createStyles,
   Flex,
@@ -97,13 +98,15 @@ const MediaGrid = ({ data }: any) => {
   return (
     <SimpleGrid cols={3}>
       {data.map((result: any) => (
-        <Flex key={result._id} justify={"center"} direction="column">
-          <Image maw={128} src={result.url} alt={result.name} />
-         
-            <Text weight={500}>{result.name}</Text>
-            <MatchingCustomFields result={result} />
-          
-        </Flex>
+        <Card key={result._id} p="md" radius="md" withBorder>
+          <Card.Section h={200}>
+            <Flex justify={"center"} align={"center"} h={"100%"}>
+              <Image maw={128} src={result.url} alt={result.name} />
+            </Flex>
+          </Card.Section>
+          <Text weight={500}>{result.name}</Text>
+          <MatchingCustomFields result={result} />
+        </Card>
       ))}
     </SimpleGrid>
   );
@@ -145,12 +148,12 @@ const Search = (props: Props) => {
         console.log("error", error);
       }
     }
-  }
+  };
 
   return (
-    <Flex direction={'column'} align='center'>
+    <Flex direction={"column"} align="center">
       <Title align="center" py="md">
-        Asset Search
+        Media Search
       </Title>
       <Center py="lg">
         <Popover
@@ -177,14 +180,20 @@ const Search = (props: Props) => {
               value={searchString}
               onChange={(e) => setSearchString(e.currentTarget.value)}
               onKeyDown={getHotkeyHandler([
-                ["Enter", () => {
-                  handleSearch(searchString);
-                  setShowingPopover(false);
-                }],
-                ["mod+L", () => {
-                  setSearchString("");
-                  setSearchResults([]);
-                }]
+                [
+                  "Enter",
+                  () => {
+                    handleSearch(searchString);
+                    setShowingPopover(false);
+                  },
+                ],
+                [
+                  "mod+L",
+                  () => {
+                    setSearchString("");
+                    setSearchResults([]);
+                  },
+                ],
               ])}
             />
           </Popover.Target>
@@ -193,8 +202,7 @@ const Search = (props: Props) => {
           </Popover.Dropdown>
         </Popover>
       </Center>
-      <Center w='50%'>
-
+      <Center w="50%">
         {searchResults.length > 0 && <MediaGrid data={searchResults} />}
       </Center>
     </Flex>
