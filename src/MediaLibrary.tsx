@@ -82,6 +82,7 @@ const MediaLibrary = (props: Props) => {
       const res = await createAsset(formData);
       console.log(res);
       setUploadedFile(res);
+      setFile(null);
     } catch (error) {
       console.log(error);
     } finally {
