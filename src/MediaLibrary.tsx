@@ -5,12 +5,13 @@ import {
   createStyles,
   FileInput,
   Flex,
+  FlexProps,
   Image,
   MultiSelect,
   MultiSelectProps,
   Skeleton,
   Text,
-  Title
+  Title,
 } from "@mantine/core";
 import React, { useEffect } from "react";
 import { FiArrowLeft, FiExternalLink, FiImage, FiUpload } from "react-icons/fi";
@@ -18,7 +19,7 @@ import { Link } from "react-router-dom";
 import {
   createAsset,
   fetchAssetLabels,
-  updateCustomFields
+  updateCustomFields,
 } from "./apis/assets";
 
 interface Props {}
@@ -47,47 +48,72 @@ const initialState = {
   _id: "",
 };
 
-const MediaLibrary = (props: Props) => {
-  const [file, setFile] = React.useState<File | null>(null);
-  const [isUploading, setIsUploading] = React.useState<boolean>(false);
+export const MediaCard: React.FC<{
+  uploadedFile: UploadedFile;
+  setUploadedFile: (uploadedFile: UploadedFile) => void;
+} & FlexProps> = ({ uploadedFile, setUploadedFile, ...props }) => {
+  const { classes } = useStyles();
   const [isFetchingLabels, setIsFetchingLabels] =
     React.useState<boolean>(false);
-  const [uploadedFile, setUploadedFile] =
-    React.useState<UploadedFile>(initialState);
-  const { classes } = useStyles();
-  const [multiSelectData, setMultiSelectData] = React.useState<{
-    products: MultiSelectProps["data"];
-    tags: MultiSelectProps["data"];
-    colors: MultiSelectProps["data"];
-  }>({
-    products: [],
-    tags: [],
-    colors: [],
-  });
-  const [labels, setLabels] = React.useState<{
-    products: string[];
-    tags: string[];
-    colors: string[];
-  }>({
+  const [multiSelectData, setMultiSelectData] = React.useState<MultiSelectData>(
+    {
+      products: [],
+      tags: [],
+      colors: [],
+    }
+  );
+  const [labels, setLabels] = React.useState<Labels>({
     products: [],
     tags: [],
     colors: [],
   });
 
-  const uploadAsset = async () => {
-    try {
-      setIsUploading(true);
-      const formData = new FormData();
-      formData.append("file", file as File);
-      const res = await createAsset(formData);
-      console.log(res);
-      setUploadedFile(res);
-      setFile(null);
-    } catch (error) {
-      console.log(error);
-    } finally {
-      setIsUploading(false);
+  useEffect(() => {
+    if (
+      isFetchingLabels ||
+      uploadedFile.customFields?.products?.length ||
+      uploadedFile.customFields?.tags?.length ||
+      uploadedFile.customFields?.colors?.length
+    ) {
+
+      if (!multiSelectData.products.length || !multiSelectData.tags.length || !multiSelectData.colors.length) {
+        setMultiSelectData({
+          products: getData(uploadedFile, "products"),
+          tags: getData(uploadedFile, "tags"),
+          colors: getData(uploadedFile, "colors"),
+        });
+  
+        setLabels({
+          products: getData(uploadedFile, "products").map((item) => item.value),
+          tags: getData(uploadedFile, "tags").map((item) => item.value),
+          colors: getData(uploadedFile, "colors").map((item) => item.value),
+        });
+      }
+      return;
     }
+
+    if (uploadedFile.name) {
+      fetchLabels();
+    }
+  }, [uploadedFile, isFetchingLabels]);
+
+  const getData = (
+    uploadedFile: UploadedFile,
+    key: keyof CustomFields
+  ): Array<{ label: string; value: string }> => {
+    if (
+      uploadedFile.customFields &&
+      uploadedFile.customFields?.[key] &&
+      uploadedFile.customFields?.[key]?.length
+    ) {
+      const data =
+        uploadedFile.customFields?.[key]
+          ?.split(", ")
+          .map((item) => ({ label: item, value: item })) || [];
+      return data;
+    }
+
+    return [];
   };
 
   const fetchLabels = async () => {
@@ -117,41 +143,6 @@ const MediaLibrary = (props: Props) => {
     } finally {
       setIsFetchingLabels(false);
     }
-  };
-
-  useEffect(() => {
-    if (
-      isFetchingLabels ||
-      isUploading ||
-      uploadedFile.customFields?.products?.length ||
-      uploadedFile.customFields?.tags?.length ||
-      uploadedFile.customFields?.colors?.length
-    ) {
-      return;
-    }
-
-    if (uploadedFile.name) {
-      fetchLabels();
-    }
-  }, [uploadedFile, isFetchingLabels, isUploading]);
-
-  const getData = (
-    uploadedFile: UploadedFile,
-    key: keyof CustomFields
-  ): Array<{ label: string; value: string }> => {
-    if (
-      uploadedFile.customFields &&
-      uploadedFile.customFields?.[key] &&
-      uploadedFile.customFields?.[key]?.length
-    ) {
-      const data =
-        uploadedFile.customFields?.[key]
-          ?.split(", ")
-          .map((item) => ({ label: item, value: item })) || [];
-      return data;
-    }
-
-    return [];
   };
 
   const updateLabels = async (key: keyof CustomFields, value: any) => {
@@ -196,6 +187,130 @@ const MediaLibrary = (props: Props) => {
   };
 
   return (
+    <Flex justify={"center"} my="lg">
+      <Flex className={classes.card} {...props}>
+        <Image
+          className={classes.imageRoot}
+          src={uploadedFile.url}
+          alt={uploadedFile.name}
+          maw={240}
+        />
+        <Box my="lg" className={classes.details}>
+          <Text className={classes.imageTitle}>{uploadedFile.name}</Text>
+          <Box
+            component="a"
+            href={uploadedFile.url}
+            target="_blank"
+            className={classes.imageTitle}
+            py="xs"
+            w="fit-content"
+          >
+            Open in new tab <FiExternalLink />
+          </Box>
+
+          {isFetchingLabels ? (
+            <Skeleton height={60} mb="lg" />
+          ) : (
+            <MultiSelect
+              data={multiSelectData.products}
+              placeholder="Select products"
+              label="Products"
+              multiple
+              creatable
+              searchable
+              getCreateLabel={(query) => `+ Create ${query}`}
+              value={labels.products}
+              onChange={(v) => handleMultiSelectChange("products", v)}
+              onCreate={(query) => {
+                updateLabels("products", [...labels.products, query]);
+                return query;
+              }}
+              mb="lg"
+            />
+          )}
+
+          {isFetchingLabels ? (
+            <Skeleton height={60} mb="lg" />
+          ) : (
+            <MultiSelect
+              data={multiSelectData.colors}
+              placeholder="Select colors"
+              label="Colors"
+              multiple
+              value={labels.colors}
+              onChange={(v) => handleMultiSelectChange("colors", v)}
+              creatable
+              searchable
+              getCreateLabel={(query) => `+ Create ${query}`}
+              onCreate={(query) => {
+                updateLabels("colors", [...labels.colors, query]);
+                return query;
+              }}
+              mb="lg"
+            />
+          )}
+
+          {isFetchingLabels ? (
+            <Skeleton height={60} mb="lg" />
+          ) : (
+            <MultiSelect
+              data={multiSelectData.tags}
+              placeholder="Select tags"
+              label="Tags"
+              multiple
+              value={labels.tags}
+              onChange={(v) => handleMultiSelectChange("tags", v)}
+              creatable
+              searchable
+              getCreateLabel={(query) => `+ Create ${query}`}
+              onCreate={(query) => {
+                updateLabels("tags", [...labels.tags, query]);
+                return query;
+              }}
+              mb="lg"
+            />
+          )}
+        </Box>
+      </Flex>
+    </Flex>
+  );
+};
+
+interface MultiSelectData {
+  products: MultiSelectProps["data"];
+  tags: MultiSelectProps["data"];
+  colors: MultiSelectProps["data"];
+}
+
+interface Labels {
+  products: string[];
+  tags: string[];
+  colors: string[];
+}
+
+const MediaLibrary = (props: Props) => {
+  const [file, setFile] = React.useState<File | null>(null);
+  const [isUploading, setIsUploading] = React.useState<boolean>(false);
+  const [uploadedFile, setUploadedFile] =
+    React.useState<UploadedFile>(initialState);
+
+  const uploadAsset = async () => {
+    try {
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append("file", file as File);
+      const res = await createAsset(formData);
+      console.log(res);
+      setUploadedFile(res);
+      setFile(null);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  return (
     <Box>
       <Title align="center" py="md">
         Media Upload
@@ -219,92 +334,10 @@ const MediaLibrary = (props: Props) => {
         </Button>
       </Flex>
       {uploadedFile.name && (
-        <Flex justify={"center"} my="lg">
-          <Box className={classes.card}>
-            <Image
-              className={classes.imageRoot}
-              src={uploadedFile.url}
-              alt={uploadedFile.name}
-              maw={240}
-            />
-            <Box my="lg" className={classes.details}>
-              <Text className={classes.imageTitle}>{uploadedFile.name}</Text>
-              <Box
-                component="a"
-                href={uploadedFile.url}
-                target="_blank"
-                className={classes.imageTitle}
-                py="xs"
-                w="fit-content"
-              >
-                Open in new tab <FiExternalLink />
-              </Box>
-
-              {isFetchingLabels ? (
-                <Skeleton height={60} mb="lg" />
-              ) : (
-                <MultiSelect
-                  data={multiSelectData.products}
-                  placeholder="Select products"
-                  label="Products"
-                  multiple
-                  creatable
-                  searchable
-                  getCreateLabel={(query) => `+ Create ${query}`}
-                  value={labels.products}
-                  onChange={(v) => handleMultiSelectChange("products", v)}
-                  onCreate={(query) => {
-                    updateLabels("products", [...labels.products, query]);
-                    return query;
-                  }}
-                  mb="lg"
-                />
-              )}
-
-              {isFetchingLabels ? (
-                <Skeleton height={60} mb="lg" />
-              ) : (
-                <MultiSelect
-                  data={multiSelectData.colors}
-                  placeholder="Select colors"
-                  label="Colors"
-                  multiple
-                  value={labels.colors}
-                  onChange={(v) => setLabels((c) => ({ ...c, colors: v }))}
-                  creatable
-                  searchable
-                  getCreateLabel={(query) => `+ Create ${query}`}
-                  onCreate={(query) => {
-                    updateLabels("colors", [...labels.colors, query]);
-                    return query;
-                  }}
-                  mb="lg"
-                />
-              )}
-
-              {isFetchingLabels ? (
-                <Skeleton height={60} mb="lg" />
-              ) : (
-                <MultiSelect
-                  data={multiSelectData.tags}
-                  placeholder="Select tags"
-                  label="Tags"
-                  multiple
-                  value={labels.tags}
-                  onChange={(v) => setLabels((c) => ({ ...c, tags: v }))}
-                  creatable
-                  searchable
-                  getCreateLabel={(query) => `+ Create ${query}`}
-                  onCreate={(query) => {
-                    updateLabels("tags", [...labels.tags, query]);
-                    return query;
-                  }}
-                  mb="lg"
-                />
-              )}
-            </Box>
-          </Box>
-        </Flex>
+        <MediaCard
+          uploadedFile={uploadedFile}
+          setUploadedFile={setUploadedFile}
+        />
       )}
       <Affix position={{ top: 20, left: 20 }}>
         <Link to="/">
@@ -321,7 +354,6 @@ export default MediaLibrary;
 
 const useStyles = createStyles((theme) => ({
   card: {
-    display: "flex",
     width: 800,
     // border: `1px solid ${theme.colors.gray[3]}`,
     borderRadius: theme.radius.lg,

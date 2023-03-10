@@ -5,6 +5,7 @@ import {
   Card,
   Center,
   createStyles,
+  Drawer,
   Flex,
   Grid,
   Image,
@@ -14,48 +15,18 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
-import { getHotkeyHandler, useDebouncedValue } from "@mantine/hooks";
+import {
+  getHotkeyHandler,
+  useDebouncedValue,
+  useDisclosure,
+} from "@mantine/hooks";
 import React, { useEffect, useState } from "react";
 import { FiArrowLeft } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import { autoCompleteAssets, searchAssets } from "./apis/assets";
+import { MediaCard } from "./MediaLibrary";
 
 interface Props {}
-
-const SearchResults: React.FC<{ data: any }> = ({ data }) => {
-  const { classes } = useStyles();
-
-  return (
-    <Grid>
-      <Grid.Col span={5} className={classes.title}>
-        Product Name
-      </Grid.Col>
-      <Grid.Col span={2} className={classes.title}>
-        Products
-      </Grid.Col>
-      <Grid.Col span={2} className={classes.title}>
-        Colors
-      </Grid.Col>
-      <Grid.Col span={3} className={classes.title}>
-        Tags
-      </Grid.Col>
-      {data.map((result: any) => (
-        <>
-          <Grid.Col span={5}>
-            <Box component="a" href={result.url} target="_blank">
-              {result.name}
-            </Box>
-          </Grid.Col>
-          <Grid.Col span={2}>{result.customFields.products}</Grid.Col>
-          <Grid.Col span={2}>{result.customFields.colors}</Grid.Col>
-          <Grid.Col span={3} className={classes.brand}>
-            {result.customFields.tags}
-          </Grid.Col>
-        </>
-      ))}
-    </Grid>
-  );
-};
 
 const MatchingCustomFields = ({ result }: any) => {
   const doesNameMatch =
@@ -98,11 +69,23 @@ const ImageSearchResults: React.FC<{ data: any }> = ({ data }) => {
   );
 };
 
-const MediaGrid = ({ data }: any) => {
+const MediaGrid = ({
+  data,
+  onClick,
+}: {
+  data: any;
+  onClick: (data: any) => void;
+}) => {
   return (
     <SimpleGrid cols={3}>
       {data.map((result: any) => (
-        <Card key={result._id} p="md" radius="md" withBorder>
+        <Card
+          key={result._id}
+          p="md"
+          radius="md"
+          withBorder
+          onClick={() => onClick(result)}
+        >
           <Card.Section h={200}>
             <Flex justify={"center"} align={"center"} h={"100%"}>
               <Image maw={128} src={result.url} alt={result.name} />
@@ -124,6 +107,8 @@ const Search = (props: Props) => {
   const [fetching, setFetching] = React.useState(false);
   const [showingPopover, setShowingPopover] = useState(false);
   const { classes } = useStyles();
+  const [opened, { open, close }] = useDisclosure(false);
+  const [selectedFile, setSelectedFile] = useState<any>(null);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -206,9 +191,37 @@ const Search = (props: Props) => {
           </Popover.Dropdown>
         </Popover>
       </Center>
-      <Center w="50%">
-        {searchResults.length > 0 && <MediaGrid data={searchResults} />}
+      <Center w="40em">
+        {searchResults.length > 0 && (
+          <MediaGrid
+            data={searchResults}
+            onClick={(res) => {
+              open();
+              setSelectedFile(res);
+            }}
+          />
+        )}
       </Center>
+      <Drawer
+        opened={opened}
+        position="right"
+        onClose={close}
+        size="xl"
+        padding={'sm'}
+        styles={{
+          body: {
+            overflow: "auto",
+            height: "100%",
+          }
+        }}
+      >
+        <MediaCard
+          uploadedFile={selectedFile}
+          setUploadedFile={setSelectedFile}
+          direction="column"
+          align={"center"}
+        />
+      </Drawer>
       <Affix position={{ top: 20, left: 20 }}>
         <Link to="/">
           <Button leftIcon={<FiArrowLeft size="1rem" />} variant="subtle">
